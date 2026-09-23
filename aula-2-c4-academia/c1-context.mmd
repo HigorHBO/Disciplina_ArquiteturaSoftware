@@ -1,0 +1,11 @@
+flowchart LR
+    Aluno(["Aluno<br>consulta treinos e agenda aulas"])
+    Personal(["Personal Trainer<br>monta e ajusta planos de treino"])
+    Recepcao(["Recepção<br>cadastra alunos e matrículas"])
+    Sistema["Sistema da Academia"]
+    Notificacao["Serviço de Notificação<br>(e-mail / SMS)"]
+
+    Aluno -->|consulta treino e agenda aula| Sistema
+    Personal -->|cria e atualiza plano de treino| Sistema
+    Recepcao -->|cadastra aluno e matrícula| Sistema
+    Sistema -->|avisa vencimento de mensalidade| Notificacao

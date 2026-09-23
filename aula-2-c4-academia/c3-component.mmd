@@ -1,0 +1,12 @@
+flowchart TD
+    subgraph SA["API"]
+        Matricula["Matrículas<br>cadastra e gerencia alunos"]
+        Treino["Treinos<br>cria, ajusta e consulta planos de treino"]
+        Notificacao["Notificação<br>monitora vencimento da mensalidade"]
+    end
+
+    Email["Disparador de e-mail/SMS"]
+
+    Treino -->|consulta| Matricula
+    Matricula -->|aciona| Notificacao
+    Notificacao -->|chama| Email

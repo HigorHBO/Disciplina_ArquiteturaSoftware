@@ -1,0 +1,21 @@
+flowchart TD
+    Aluno(["Aluno"])
+    Personal(["Personal Trainer"])
+    Recepcao(["Recepção"])
+
+    subgraph SA["Sistema da Academia"]
+        App["App do Aluno<br>(consulta treinos e horários)"]
+        Backoffice["Painel da Recepção/Personal<br>(cadastros e planos)"]
+        Server["API"]
+        DB[("Banco de Dados")]
+    end
+
+    Notificacao["Serviço de Notificação"]
+
+    Aluno -->|consulta treino e agenda aula| App
+    Personal -->|cria e ajusta plano de treino| Backoffice
+    Recepcao -->|cadastra aluno e matrícula| Backoffice
+    App -->|chama API| Server
+    Backoffice -->|chama API| Server
+    Server -->|lê e grava| DB
+    Server -->|monitora vencimento e notifica| Notificacao

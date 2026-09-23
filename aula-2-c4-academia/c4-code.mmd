@@ -1,0 +1,24 @@
+classDiagram
+    class Treino {
+        - id
+        - aluno
+        - personal
+        - dataInicio
+        - dataFim
+        - mensalidade
+        + criar(aluno, personal, dataInicio, dataFim, mensalidade)
+        + renovar(novaDataFim)
+        + encerrar()
+        + estaVencido()
+    }
+    class Notificador {
+        <<interface>>
+        + notificar(Treino)
+    }
+
+    class NotificadorEmail {
+        + notificar(treino)
+    }
+
+    Treino --> Notificador : usa
+    NotificadorEmail ..|> Notificador : implementa
