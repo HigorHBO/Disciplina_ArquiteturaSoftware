@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <title>Alunos</title>
+</head>
+<body>
+
+    <header>
+        <h1>Gerenciamento de Alunos</h1>
+        <nav>
+            <a th:href="@{/}">Voltar para Início</a>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Cadastrar Aluno</h2>
+            <form th:action="@{/alunos}" th:object="${aluno}" method="post">
+                <div>
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" th:field="*{nome}" required>
+                </div>
+                <div>
+                    <label for="plano">Plano:</label>
+                    <input type="text" id="plano" th:field="*{plano}" required>
+                </div>
+                <div>
+                    <label for="mensalidade">Mensalidade:</label>
+                    <input type="number" id="mensalidade" step="0.01" th:field="*{mensalidade}" required>
+                </div>
+                <button type="submit">Salvar</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Lista de Alunos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Plano</th>
+                        <th>Mensalidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="al : ${alunos}">
+                        <td th:text="${al.id}"></td>
+                        <td th:text="${al.nome}"></td>
+                        <td th:text="${al.plano}"></td>
+                        <td th:text="${al.mensalidade}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        Projeto de compreensão do MVC
+    </footer>
+
+</body>
+</html>
