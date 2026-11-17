@@ -1,0 +1,7 @@
+flowchart TD
+    Inicio(( )) --> A[Recebe pedido]
+    A --> B{Produto ativo?}
+    B -- [não] --> R1[Recusa produto inativo] --> Fim(( ))
+    B -- [sim] --> C{Tem estoque?}
+    C -- [não] --> R2[Recusa sem estoque] --> Fim
+    C -- [sim] --> D[Confirma pedido] --> Fim

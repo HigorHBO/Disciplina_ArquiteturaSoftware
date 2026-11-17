@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> ATIVO
+    ATIVO --> ESGOTADO : baixarEstoque [estoque == 0] / attVendedor()
+    ESGOTADO --> ATIVO : acrescerEstoque [estoque > 0] / attVendedores()
+    ATIVO --> DESCONTINUADO : descontinuar()
+    ESGOTADO --> DESCONTINUADO : descontinuar()
+    DESCONTINUADO --> [*]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    actor Usuário
+    participant Controller
+    participant Service
+    participant Repository
+
+    Usuário->>Controller: GET /products
+    Controller->>Service: read()
+    Service->>Repository: findAll()
+    Repository-->>Service: List<Product>
+    Service-->>Controller: List<Product>
+    Controller-->>Usuário: view products.html
