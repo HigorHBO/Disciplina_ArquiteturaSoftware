@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> CRIADA : Comando FaturarPedido / Evento FaturaCriada
+
+    CRIADA --> COM_BOLETO : Evento BoletoEmitido
+    CRIADA --> COM_NOTA : Evento NotaFiscalEmitida
+
+    COM_BOLETO --> AGUARDANDO_FINALIZACAO : Evento NotaFiscalEmitida
+    COM_NOTA --> AGUARDANDO_FINALIZACAO : Evento BoletoEmitido
+
+    AGUARDANDO_FINALIZACAO --> FINALIZADA : Fatura consolidada / Evento FaturaFinalizada
+
+    FINALIZADA --> NOTIFICADA : Evento ClienteNotificado
+    NOTIFICADA --> [*]
+
+    note right of AGUARDANDO_FINALIZACAO
+        Boleto e Nota Fiscal podem
+        chegar em qualquer ordem.
+        A entidade Fatura no domínio
+        sabe quando ambos estão prontos.
+    end note

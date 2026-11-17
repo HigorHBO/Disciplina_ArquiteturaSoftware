@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph Faturamento ["Serviço de Faturamento"]
+        Comando["Comando<br>(Fature o Pedido)"] --> App["Aplicação"]
+        App -->|Grava apenas eventos| EventStore[("Event Store<br>(KurrentDB / EventStoreDB)")]
+    end
+
+    subgraph StreamFatura ["Stream: fatura-42 (Append-Only)"]
+        E1["1. FaturaCriada<br>(valor: R$ 500)"]
+        E2["2. BoletoEmitido<br>(código de barras)"]
+        E3["3. NotaFiscalEmitida<br>(rps da nota)"]
+        E4["4. FaturaFinalizada<br>(status finalizada)"]
+        E5["5. ClienteNotificado<br>(hash do e-mail)"]
+        E1 --> E2 --> E3 --> E4 --> E5
+    end
+
+    EventStore -.-> StreamFatura
+
+    subgraph Assinantes ["Assinantes (com Listener e Marcador de Posição)"]
+        Publicador["Assinante 1: Publicador<br>(Listener)"]
+        Projecao["Assinante 2: Projeção<br>(Listener)"]
+    end
+
+    StreamFatura -->|Entrega em ordem| Publicador
+    StreamFatura -->|Entrega em ordem| Projecao
+
+    Publicador -->|Publica eventos para fora| BrokerRabbit[("Broker<br>(RabbitMQ / Kafka)")]
+    Projecao -->|Monta documento atualizado| MongoRead[("Banco de Leitura<br>(MongoDB)")]
