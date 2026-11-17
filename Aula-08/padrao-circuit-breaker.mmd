@@ -1,0 +1,24 @@
+stateDiagram-v2
+    [*] --> FECHADO
+
+    FECHADO --> ABERTO : Limite de falhas consecutivas ou timeout atingido
+    note right of FECHADO
+        Operação normal:
+        As chamadas passam normalmente
+        ao serviço de destino.
+    end note
+
+    ABERTO --> MEIO_ABERTO : Tempo de espera expirado (Cooldown)
+    note right of ABERTO
+        Falha rápida (Fail-Fast):
+        Nem tenta chamar o serviço.
+        Retorna erro ou fallback imediatamente.
+    end note
+
+    MEIO_ABERTO --> FECHADO : Chamada de teste bem-sucedida
+    MEIO_ABERTO --> ABERTO : Chamada de teste falhou
+    note right of MEIO_ABERTO
+        Teste de recuperação:
+        Deixa passar poucas requisições
+        para testar a saúde do serviço.
+    end note

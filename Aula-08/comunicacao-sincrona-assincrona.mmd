@@ -1,0 +1,11 @@
+flowchart TD
+    Inicio((Início da Comunicação)) --> Pergunta{Preciso da resposta imediatamente<br>para continuar o fluxo?}
+    
+    Pergunta -- [Sim] --> Sincrona["Comunicação Síncrona<br>(Ex.: REST, SOAP, gRPC)"]
+    Pergunta -- [Não] --> Assincrona["Comunicação Assíncrona<br>(Ex.: Fila RabbitMQ, Kafka, SQS)"]
+
+    Sincrona --> DetalheSinc["- Quem chama fica bloqueado esperando<br>- Exige ambos os serviços online<br>- Exemplo: Vendas solicita ID ao Faturamento"]
+    Assincrona --> DetalheAssinc["- Quem envia publica e segue a execução<br>- Fila guarda mensagem até o destino processar<br>- Exemplo: Faturamento publica para Cobrança"]
+
+    DetalheSinc --> Fim((Fim))
+    DetalheAssinc --> Fim

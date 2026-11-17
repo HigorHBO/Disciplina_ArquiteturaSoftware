@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Faturamento ["Microsserviço de Faturamento"]
+        App["Lógica de Aplicação"]
+        subgraph BancoFaturamento ["Banco de Dados (Mesma Transação ACID)"]
+            TabelaFatura[("Tabela Fatura<br>(Salva dados da fatura)")]
+            TabelaOutbox[("Tabela Outbox<br>(Caixa de Saída de Mensagens)")]
+        end
+        Relay["Processo de Envio<br>(Message Relay / CDC)"]
+    end
+
+    subgraph FilaBroker ["Mensageria"]
+        Fila[("Fila de Mensagens<br>(RabbitMQ / Kafka)")]
+    end
+
+    subgraph Cobranca ["Microsserviço de Cobrança"]
+        Consumidor["Consumidor de Cobrança<br>(Com Idempotência)"]
+    end
+
+    App -->|1. Salva Fatura e Mensagem na mesma transação local| BancoFaturamento
+    Relay -->|2. Lê mensagens pendentes| TabelaOutbox
+    Relay -->|3. Publica na fila| Fila
+    Fila -->|4. Entrega mensagem| Consumidor

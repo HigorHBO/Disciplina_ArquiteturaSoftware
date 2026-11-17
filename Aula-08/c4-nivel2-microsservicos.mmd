@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Internos ["Serviços Internos (Microsserviços)"]
+        Vendas["Vendas<br>(Aplicação MVC)"]
+        Faturamento["Faturamento<br>(Hub Hexagonal)"]
+        Cobranca["Cobrança<br>(Boletos)"]
+        Fiscal["Fiscal<br>(Notas Fiscais)"]
+        Notificacao["Notificação<br>(E-mails / Mensagens)"]
+    end
+
+    subgraph Externos ["Fora da Empresa (Sistemas Externos)"]
+        BancoEmissor["Banco Emissor<br>(API Boleto)"]
+        EmissorNota["Emissor da Nota<br>(Sefaz / Prefeitura)"]
+        ServidorEmail["Servidor de E-mail<br>(SMTP)"]
+    end
+
+    Vendas -->|REST / HTTP (Síncrono)| Faturamento
+    Faturamento -->|SOAP / XML (Síncrono)| Fiscal
+    Faturamento -.->|Fila de Mensageria (Assíncrono)| Cobranca
+    Faturamento -.->|Fila de Mensageria (Assíncrono)| Notificacao
+
+    Cobranca -->|API Externa| BancoEmissor
+    Fiscal -->|SOAP / WebService| EmissorNota
+    Notificacao -->|SMTP| ServidorEmail

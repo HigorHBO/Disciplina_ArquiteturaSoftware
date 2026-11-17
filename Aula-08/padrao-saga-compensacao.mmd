@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor Cliente
+    participant Faturamento as Serviço Faturamento
+    participant Cobranca as Serviço Cobrança
+    participant Fiscal as Serviço Fiscal
+
+    Cliente->>Faturamento: Solicitar faturamento
+    activate Faturamento
+    Note over Faturamento: 1. Transação Local: Fatura Criada
+    Faturamento->>Cobranca: Gerar boleto (Transação Local)
+    activate Cobranca
+    Note over Cobranca: 2. Transação Local: Boleto Gerado
+    Cobranca-->>Faturamento: Boleto gerado com sucesso
+    deactivate Cobranca
+
+    Faturamento->>Fiscal: Emitir nota fiscal (Transação Local)
+    activate Fiscal
+    Note over Fiscal: 3. Falha: Nota Recusada (ex: Sefaz indisponível)
+    Fiscal-->>Faturamento: Erro: Emissão recusada
+    deactivate Fiscal
+
+    Note over Faturamento,Cobranca: INÍCIO DA COMPENSAÇÃO (Desfazer passos anteriores)
+    Faturamento->>Cobranca: Cancelar boleto (Ação Compensatória)
+    activate Cobranca
+    Note over Cobranca: 4. Boleto cancelado
+    Cobranca-->>Faturamento: Confirmação de cancelamento
+    deactivate Cobranca
+
+    Note over Faturamento: 5. Transação Compensatória: Fatura Cancelada
+    Faturamento-->>Cliente: Erro no faturamento (Consistência Eventual Garantida)
+    deactivate Faturamento
