@@ -1,0 +1,21 @@
+stateDiagram-v2
+    [*] --> INDISPONIVEL : Cadastrar produto [estoque inicial = 0]
+
+    INDISPONIVEL --> DISPONIVEL : darEntrada [quantidade > 0] / estoque sai de zero
+    
+    DISPONIVEL --> DISPONIVEL : darEntrada / incrementa estoque
+    DISPONIVEL --> DISPONIVEL : darSaida [saldo restante > 0] / decrementa estoque
+
+    DISPONIVEL --> INDISPONIVEL : darSaida [saldo restante == 0] / estoque zera
+
+    INDISPONIVEL --> DESCONTINUADO : descontinuarPorAdmin() [Exclusivo do Administrador]
+    DISPONIVEL --> DESCONTINUADO : descontinuarPorAdmin() [Exclusivo do Administrador]
+
+    note right of DESCONTINUADO
+        Bloqueio total:
+        Um produto descontinuado
+        NÃO pode ser manipulado no estoque
+        (rejeita entrada e saída).
+    end note
+
+    DESCONTINUADO --> [*]

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class FaturaTest {
 
   @Test
-  @DisplayName("Deve criar fatura válida com dados obrigatórios")
+  @DisplayName("Deve criar fatura válida com dados obrigatórios (RF01)")
   void deveCriarFaturaValida() {
     Fatura fatura = Fatura.criar(10L, new BigDecimal("100.50"));
 
@@ -39,17 +39,32 @@ class FaturaTest {
   }
 
   @Test
-  @DisplayName("Deve registrar boleto, nota fiscal e hash de e-mail")
+  @DisplayName("Deve registrar boleto (RF02), chave de 44 dígitos da NF-e (RF03) e hash do e-mail (RF04)")
   void deveRegistrarIntegracoes() {
     Fatura fatura = Fatura.criar(1L, new BigDecimal("50.00"));
 
-    fatura.inserirBoleto("34191.00000");
-    fatura.inserirNotaFiscal("RPS-12345");
-    fatura.inserirHashEmail("HASH-ABCDE");
+    // RF02: Código de barras do boleto
+    fatura.inserirBoleto("34191.79001 01043.510047 91020.150008 8 98760000010");
+    assertEquals("34191.79001 01043.510047 91020.150008 8 98760000010", fatura.getCodigoBarras());
 
-    assertEquals("34191.00000", fatura.getCodigoBarras());
-    assertEquals("RPS-12345", fatura.getRps());
-    assertEquals("HASH-ABCDE", fatura.getHashEmail());
+    // RF03: Chave de acesso de exatamente 44 dígitos
+    String chave44 = "41261112345678000195550010000000011234567890";
+    fatura.inserirNotaFiscal(chave44);
+    assertEquals(44, fatura.getRps().length());
+    assertEquals(chave44, fatura.getChaveAcesso());
+
+    // RF04: Hash do e-mail
+    fatura.inserirHashEmail("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", fatura.getHashEmail());
+  }
+
+  @Test
+  @DisplayName("Deve rejeitar chave de acesso que não tenha exatamente 44 dígitos numéricos (RF03)")
+  void deveRejeitarChaveInvalida() {
+    Fatura fatura = Fatura.criar(1L, new BigDecimal("50.00"));
+
+    assertThrows(RuntimeException.class, () -> fatura.inserirNotaFiscal("123")); // Menos de 44
+    assertThrows(RuntimeException.class, () -> fatura.inserirNotaFiscal("4126111234567800019555001000000001123456789A")); // Não numérico
   }
 
 }

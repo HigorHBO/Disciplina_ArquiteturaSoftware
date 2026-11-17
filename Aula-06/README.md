@@ -1,168 +1,164 @@
-# Aula 6 — Estruturas Dinâmicas: Sequência, Atividades e Estados
+# Aula 6 — Estruturas Dinâmicas & Módulo de Estoque
 
 > **Disciplina:** Arquitetura de Software  
 > **Professor:** Prof. Dr. Pedro Henrique Nogueira Pizzutti  
-> **Contexto:** Modelagem comportamental e dinâmica aplicada à arquitetura MVC (Sistema de Vendas e Estoque)
+> **Atividade:** Implementação do Módulo de Estoque no padrão MVC e Modelagem Dinâmica (Sequência, Atividades e Estados).
 
 ---
 
-## 1. Visão Geral: Estático (C4) vs. Dinâmico
+## 1. Atividade: Módulo de Estoque (Implementação MVC)
 
-O modelo C4 (visto nas Aulas 2 e 4) organiza a arquitetura sob um ponto de vista **estático**: define quem são os atores, quais contêineres compõem o sistema e como os componentes estão distribuídos (Controllers, Services, Repositories).
+### Descrição e Regras de Negócio
+No sistema de vendas e estoque:
+1. **Status do Produto:** O produto possui os status `DISPONIVEL`, `INDISPONIVEL` e `DESCONTINUADO`.
+2. **Criação:** Ao criar um produto, ele começa com estoque 0 e status **`INDISPONIVEL`**.
+3. **Exclusividade do Administrador:** Apenas o **ADM** pode descontinuar um produto.
+4. **Bloqueio de Manipulação:** Um produto com status **`DESCONTINUADO`** **não pode** ser manipulado no estoque (rejeita entrada e saída).
+5. **Transições de Estoque:**
+   - **Entrada:** Quando o estoque sai de zero (estoque > 0), o status passa para **`DISPONIVEL`**.
+   - **Saída:** Quando o estoque zera (estoque == 0), o status passa para **`INDISPONIVEL`**.
+   - **Validação de Saldo:** Não é permitida saída sem estoque disponível suficiente.
 
-Porém, sistemas reais operam em constante mutação. É indispensável compreender a arquitetura sob uma perspectiva **dinâmica**:
-- Como uma execução acontece cronologicamente?
-- Como as regras de negócio decidem bifurcações de fluxo?
-- Como o ciclo de vida de uma entidade crítica é alterado por eventos?
-
-Para responder a essas necessidades, a Aula 6 explora três diagramas comportamentais fundamentais:
-
-| Diagrama | Pergunta Central | Foco Principal | Eixo | Melhor Aplicação |
-|---|---|---|---|---|
-| **Sequência** | *Quem chama quem, e em que ordem?* | Troca de mensagens | Tempo | Mapeamento de APIs, chamadas entre camadas/serviços e cenários de uso |
-| **Atividades** | *Quais passos o processo executa?* | Lógica e bifurcações | Fluxo de controle | Algoritmos, regras de validação complexas e fluxos de negócio |
-| **Estados** | *Em que estado o objeto está, e como muda?* | Ciclo de vida da entidade | Resposta a eventos | Entidades centrais do domínio (ex.: Pedido, Produto) |
+### Projeto MVC Implementado
+O código-fonte completo está localizado na pasta [`mvc-estoque/`](mvc-estoque/):
+- **Modelo:** [`Produto.java`](mvc-estoque/src/main/java/br/com/empresa/estoque/model/Produto.java) e [`StatusProduto.java`](mvc-estoque/src/main/java/br/com/empresa/estoque/model/StatusProduto.java) contendo as regras de negócio e validações de invariantes.
+- **Serviço:** [`ProdutoService.java`](mvc-estoque/src/main/java/br/com/empresa/estoque/service/ProdutoService.java) gerenciando operações de catálogo e movimentação.
+- **Controllers:**
+  - [`ProdutoController.java`](mvc-estoque/src/main/java/br/com/empresa/estoque/controller/ProdutoController.java): Tela e rotina de produtos (`/produtos`), cadastro inicial e descontinuação por ADM.
+  - [`EstoqueController.java`](mvc-estoque/src/main/java/br/com/empresa/estoque/controller/EstoqueController.java): Tela e rotina de movimentação de estoque (`/estoque`).
+- **Telas Thymeleaf:**
+  - [`produtos.html`](mvc-estoque/src/main/resources/templates/produtos.html): Listagem com badges de status, botão de descontinuar exclusivo de ADM e formulário de cadastro.
+  - [`estoque.html`](mvc-estoque/src/main/resources/templates/estoque.html): Formulário de lançamento de entrada/saída com feedback visual de validações.
+- **Testes Automatizados:** [`ProdutoTest.java`](mvc-estoque/src/test/java/br/com/empresa/estoque/ProdutoTest.java) cobrindo 100% das transições de status e regras de negócio.
 
 ---
 
-## 2. Diagrama de Sequência
+## 2. Diagrama de Sequência: Rotina de Entrada e Saída de Estoque
 
-### Conceito e Notação
-O diagrama de sequência descreve a troca cronológica de mensagens entre participantes:
-- **Linha de vida:** Coluna vertical pontilhada indicando a existência do participante no tempo.
-- **Ativação:** Bloco sobre a linha de vida representando o período em que o participante está processando a lógica.
-- **Mensagem:** Seta contínua horizontal indicando chamada de método, requisição HTTP ou comunicação.
-- **Retorno:** Seta tracejada representando a resposta do processamento ao emissor.
-
-### Cenário 1: Cadastrar um Produto (`POST /products`)
-Fluxo de escrita onde o usuário envia os dados, passando por Controller, Service e Repository, culminando em um redirecionamento HTTP.
+Arquivo fonte: [`diagrama-sequencia-estoque.mermaid`](diagrama-sequencia-estoque.mermaid) / [`diagrama-sequencia-estoque.mmd`](diagrama-sequencia-estoque.mmd)
 
 ```mermaid
 sequenceDiagram
-    actor Usuário
-    participant Controller
-    participant Service
-    participant Repository
+    actor Usuário as Operador de Estoque
+    participant Controller as EstoqueController
+    participant Service as ProdutoService
+    participant Produto as Produto (Entidade)
 
-    Usuário->>Controller: POST /products
-    Controller->>Service: create(product)
-    Service->>Repository: save(product)
-    Repository-->>Service: Product
-    Service-->>Controller: Product
-    Controller-->>Usuário: redirect /products
-```
+    %% Rotina de Entrada de Estoque
+    rect rgb(240, 248, 255)
+        Note over Usuário,Produto: 1. Rotina de Entrada de Estoque
+        Usuário->>Controller: POST /estoque/movimentar (produtoId, "ENTRADA", quantidade)
+        activate Controller
+        Controller->>Service: darEntrada(produtoId, quantidade)
+        activate Service
+        Service->>Service: buscarPorId(produtoId)
+        Service->>Produto: darEntrada(quantidade)
+        activate Produto
+        Note over Produto: Valida se NÃO é Descontinuado<br/>Soma quantidade<br/>Se estoque > 0 -> Status = DISPONÍVEL
+        Produto-->>Service: confirmação
+        deactivate Produto
+        Service-->>Controller: void
+        deactivate Service
+        Controller-->>Usuário: redirect /estoque (com mensagem de sucesso)
+        deactivate Controller
+    end
 
-### Cenário 2: Consulta e Renderização Disparada pelo Redirect (`GET /products`)
-Fluxo de leitura disparado após o redirecionamento para consultar os produtos e devolver a visualização HTML renderizada.
-
-```mermaid
-sequenceDiagram
-    actor Usuário
-    participant Controller
-    participant Service
-    participant Repository
-
-    Usuário->>Controller: GET /products
-    Controller->>Service: read()
-    Service->>Repository: findAll()
-    Repository-->>Service: List<Product>
-    Service-->>Controller: List<Product>
-    Controller-->>Usuário: view products.html
-```
-
----
-
-## 3. Diagrama de Atividades
-
-### Conceito e Notação
-O diagrama de atividades detalha os passos de um algoritmo ou processo de negócio, evidenciando caminhos de sucesso e de exceção:
-- **Nó Inicial:** Círculo preto preenchido; marca o início do processo.
-- **Ação:** Retângulo com cantos arredondados contendo a tarefa ou etapa de processamento.
-- **Decisão:** Losango com uma condição, de onde saem ramificações rotuladas (`[sim]`, `[não]`).
-- **Nó Final:** Círculo preto com anel externo; indica o encerramento do fluxo.
-
-### Cenário 1: Cadastro com Validação de Formulário
-Modelagem das validações dos dados recebidos antes de persistir o produto no banco ou retornar erro.
-
-```mermaid
-flowchart TD
-    Inicio(( )) --> A[Recebe formulário]
-    A --> B{Valor válido?}
-    B -- [sim] --> C[Cadastra produto]
-    B -- [não] --> D[Devolve erro]
-    C --> Fim(( ))
-    D --> Fim
-```
-
-### Cenário 2: Fechar um Pedido (Regras de Estoque e Catálogo)
-Modelagem do processamento de um pedido com múltiplas decisões de negócio (produto ativo no catálogo e saldo de estoque disponível).
-
-```mermaid
-flowchart TD
-    Inicio(( )) --> A[Recebe pedido]
-    A --> B{Produto ativo?}
-    B -- [não] --> R1[Recusa: produto inativo] --> Fim(( ))
-    B -- [sim] --> C{Tem estoque?}
-    C -- [não] --> R2[Recusa: sem estoque] --> Fim
-    C -- [sim] --> D[Confirma pedido] --> Fim
+    %% Rotina de Saída de Estoque
+    rect rgb(255, 245, 245)
+        Note over Usuário,Produto: 2. Rotina de Saída de Estoque
+        Usuário->>Controller: POST /estoque/movimentar (produtoId, "SAIDA", quantidade)
+        activate Controller
+        Controller->>Service: darSaida(produtoId, quantidade)
+        activate Service
+        Service->>Service: buscarPorId(produtoId)
+        Service->>Produto: darSaida(quantidade)
+        activate Produto
+        Note over Produto: Valida se NÃO é Descontinuado<br/>Valida se saldo >= quantidade<br/>Subtrai quantidade<br/>Se estoque == 0 -> Status = INDISPONÍVEL
+        Produto-->>Service: confirmação
+        deactivate Produto
+        Service-->>Controller: void
+        deactivate Service
+        Controller-->>Usuário: redirect /estoque (com mensagem de sucesso)
+        deactivate Controller
+    end
 ```
 
 ---
 
-## 4. Diagrama de Estados
+## 3. Diagrama de Atividades: Fluxo de Saída de Estoque
 
-### Conceito e Notação
-O diagrama de estados modela o ciclo de vida completo de uma entidade do domínio ao longo do tempo:
-- **Estado Inicial:** Ponto em que o objeto passa a existir no sistema.
-- **Estado:** Condição estável na qual o objeto permanece até que um evento ocorra.
-- **Transição:** Seta rotulada no padrão `evento [condição] / ação` ligando um estado de origem ao de destino.
-- **Estado Final:** Conclusão do ciclo de vida da entidade.
+Validação restritiva: impede a saída se o produto estiver descontinuado ou se a quantidade solicitada for maior que o saldo em estoque.
 
-### Cenário 1: Ciclo de Vida da Entidade Pedido
-Acompanhamento dos estados de um pedido desde a criação até a entrega ou cancelamento (com estorno e devolução ao estoque).
+Arquivo fonte: [`diagrama-atividade-saida-estoque.mermaid`](diagrama-atividade-saida-estoque.mermaid) / [`diagrama-atividade-saida-estoque.mmd`](diagrama-atividade-saida-estoque.mmd)
 
 ```mermaid
-stateDiagram-v2
-    [*] --> AGUARDANDO_PAGAMENTO
-    AGUARDANDO_PAGAMENTO --> PAGO : pagar()
-    PAGO --> ENVIADO : enviar() / attCliente(), gerarNF()
-    ENVIADO --> ENTREGUE : confirmar() / attVendedores()
-    AGUARDANDO_PAGAMENTO --> CANCELADO : cancelar() / attEstoque()
-    PAGO --> CANCELADO : cancelar() / attEstoque(), estornar()
-    ENTREGUE --> [*]
-    CANCELADO --> [*]
+flowchart TD
+    Inicio(( )) --> Recebe[Recebe solicitação de saída de estoque: produtoId e quantidade]
+    Recebe --> Busca[Busca produto no repositório]
+    Busca --> ValidaDescontinuado{Produto está DESCONTINUADO?}
+    
+    ValidaDescontinuado -- [Sim] --> ErroDescontinuado[Recusa: Produto descontinuado não pode ser manipulado no estoque]
+    ErroDescontinuado --> Fim(( ))
+
+    ValidaDescontinuado -- [Não] --> ValidaSaldo{Quantidade <= Estoque disponível?}
+    
+    ValidaSaldo -- [Não] --> ErroSaldo[Recusa: Sem estoque disponível suficiente]
+    ErroSaldo --> Fim
+
+    ValidaSaldo -- [Sim] --> Subtrai[Subtrai quantidade do estoque atual]
+    Subtrai --> VerificaZero{Estoque restante == 0?}
+
+    VerificaZero -- [Sim] --> MudaIndisponivel[Atualiza status para INDISPONÍVEL]
+    VerificaZero -- [Não] --> MantemDisponivel[Mantém status como DISPONÍVEL]
+
+    MudaIndisponivel --> Sucesso[Confirma saída de estoque com sucesso]
+    MantemDisponivel --> Sucesso
+    Sucesso --> Fim
 ```
 
-### Cenário 2: Ciclo de Vida da Entidade Produto
-Transição de disponibilidade do produto de acordo com a movimentação de estoque ou descontinuação.
+---
+
+## 4. Diagrama de Estados: Ciclo de Vida do Produto
+
+Mapeamento completo dos status `DISPONIVEL`, `INDISPONIVEL` e `DESCONTINUADO`:
+- Transição inicial para `INDISPONIVEL` com estoque 0.
+- Transições de estoque saindo de zero e zerando.
+- Transição exclusiva de Administrador para `DESCONTINUADO`.
+
+Arquivo fonte: [`diagrama-estados-produto.mermaid`](diagrama-estados-produto.mermaid) / [`diagrama-estados-produto.mmd`](diagrama-estados-produto.mmd)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ATIVO
-    ATIVO --> ESGOTADO : baixarEstoque [estoque == 0] / attVendedor()
-    ESGOTADO --> ATIVO : acrescerEstoque [estoque > 0] / attVendedores()
-    ATIVO --> DESCONTINUADO : descontinuar()
-    ESGOTADO --> DESCONTINUADO : descontinuar()
+    [*] --> INDISPONIVEL : Cadastrar produto [estoque inicial = 0]
+
+    INDISPONIVEL --> DISPONIVEL : darEntrada [quantidade > 0] / estoque sai de zero
+    
+    DISPONIVEL --> DISPONIVEL : darEntrada / incrementa estoque
+    DISPONIVEL --> DISPONIVEL : darSaida [saldo restante > 0] / decrementa estoque
+
+    DISPONIVEL --> INDISPONIVEL : darSaida [saldo restante == 0] / estoque zera
+
+    INDISPONIVEL --> DESCONTINUADO : descontinuarPorAdmin() [Exclusivo do Administrador]
+    DISPONIVEL --> DESCONTINUADO : descontinuarPorAdmin() [Exclusivo do Administrador]
+
+    note right of DESCONTINUADO
+        Bloqueio total:
+        Um produto descontinuado
+        NÃO pode ser manipulado no estoque
+        (rejeita entrada e saída).
+    end note
+
     DESCONTINUADO --> [*]
 ```
 
 ---
 
-## 5. Como Escolher o Diagrama Correto
+## 5. Como Executar o Módulo de Estoque
 
-Ao projetar uma funcionalidade na arquitetura de software:
-
-1. **Use Sequência** quando precisar definir o contrato e a colaboração entre componentes/camadas (Controller -> Service -> Repository) ou microsserviços ao longo de uma chamada cronológica.
-2. **Use Atividades** quando precisar documentar regras de negócio com múltiplos `ifs`, validações, fluxos alternativos e tratamentos de erro dentro de um processo.
-3. **Use Estados** quando uma entidade do banco de dados (ex.: Pedido, Matrícula, Produto) possuir um atributo `status` que determina quais operações são permitidas em cada fase do seu ciclo de vida.
-
----
-
-## 6. Arquivos Mermaid (.mmd) nesta Pasta
-
-- [`diagrama-sequencia.mmd`](diagrama-sequencia.mmd) — Diagrama de sequência do cadastro de produto (`POST /products`).
-- [`diagrama-sequencia-leitura.mmd`](diagrama-sequencia-leitura.mmd) — Diagrama de sequência da listagem disparada pelo redirect (`GET /products`).
-- [`diagrama-atividade.mmd`](diagrama-atividade.mmd) — Diagrama de atividade de validação no cadastro.
-- [`diagrama-atividade-pedido.mmd`](diagrama-atividade-pedido.mmd) — Diagrama de atividade para fechamento de pedido com validações de negócio.
-- [`diagrama-estado.mmd`](diagrama-estado.mmd) — Diagrama de estados com o ciclo de vida completo do Pedido.
-- [`diagrama-estado-produto.mmd`](diagrama-estado-produto.mmd) — Diagrama de estados para disponibilidade e ciclo de vida do Produto.
+```bash
+cd Aula-06/mvc-estoque
+./mvnw test               # Executa os 7 testes automatizados
+./mvnw spring-boot:run     # Inicia o servidor na porta 8080
+```
+- Acessar Catálogo de Produtos: `http://localhost:8080/produtos`
+- Acessar Movimentação de Estoque: `http://localhost:8080/estoque`

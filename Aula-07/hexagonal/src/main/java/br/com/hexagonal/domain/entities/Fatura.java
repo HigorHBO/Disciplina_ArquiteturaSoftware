@@ -14,7 +14,7 @@ public class Fatura {
   private BigDecimal valor;
   private LocalDateTime emitidoEm;
   private String codigoBarras;
-  private String rps;
+  private String rps; // Armazena a chave de acesso da NF-e (44 dígitos)
   private String hashEmail;
 
   @Builder 
@@ -29,7 +29,7 @@ public class Fatura {
   ) {
 
     if (pedidoId == null || pedidoId <= 0) {
-      throw new RuntimeException("A fatura precisa de um pedido!");
+      throw new RuntimeException("A fatura precisa de um pedido válido!");
     }
 
     if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
@@ -39,7 +39,7 @@ public class Fatura {
     this.id = id; 
     this.pedidoId = pedidoId; 
     this.valor = valor; 
-    this.emitidoEm = emitidoEm; 
+    this.emitidoEm = emitidoEm != null ? emitidoEm : LocalDateTime.now(); 
     this.codigoBarras = codigoBarras; 
     this.rps = rps; 
     this.hashEmail = hashEmail;
@@ -54,6 +54,9 @@ public class Fatura {
       .build();
   }
 
+  /**
+   * RF02 - O boleto emitido deve gerar um código de barras, guardado na fatura.
+   */
   public void inserirBoleto(String codigoBarras) {
     if (codigoBarras == null || codigoBarras.isBlank()) {
       throw new RuntimeException("Código de barras do boleto inválido!");
@@ -61,18 +64,27 @@ public class Fatura {
     this.codigoBarras = codigoBarras;
   }
 
-  public void inserirNotaFiscal(String rps) {
-    if (rps == null || rps.isBlank()) {
-      throw new RuntimeException("RPS da nota fiscal inválido!");
+  /**
+   * RF03 - A nota emitida deve gerar uma chave de acesso de 44 dígitos, guardada na fatura.
+   */
+  public void inserirNotaFiscal(String chaveAcesso44Digitos) {
+    if (chaveAcesso44Digitos == null || !chaveAcesso44Digitos.matches("\\d{44}")) {
+      throw new RuntimeException("Chave de acesso da NF-e inválida! Deve conter exatamente 44 dígitos numéricos.");
     }
-    this.rps = rps;
+    this.rps = chaveAcesso44Digitos;
   }
 
+  /**
+   * RF04 - O e-mail enviado deve gerar um hash do conteúdo, guardado na fatura.
+   */
   public void inserirHashEmail(String hashEmail) {
     if (hashEmail == null || hashEmail.isBlank()) {
-      throw new RuntimeException("Hash do e-mail inválido!");
+      throw new RuntimeException("Hash do conteúdo do e-mail inválido!");
     }
     this.hashEmail = hashEmail;
   }
 
+  public String getChaveAcesso() {
+    return this.rps;
+  }
 }

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Movimentação de Estoque</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 30px; background-color: #f8fafc; color: #1e293b; }
+        h1, h2 { color: #0f172a; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; font-weight: bold; color: #2563eb; text-decoration: none; }
+        .nav a:hover { text-decoration: underline; }
+        .alert-success { background: #dcfce7; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
+        .alert-danger { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-weight: 500; }
+        .container { display: flex; gap: 30px; flex-wrap: wrap; }
+        .table-container { flex: 1; min-width: 450px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; font-weight: 600; color: #475569; }
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-disponivel { background: #dcfce7; color: #15803d; }
+        .badge-indisponivel { background: #fef3c7; color: #b45309; }
+        .badge-descontinuado { background: #fee2e2; color: #b91c1c; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 380px; height: fit-content; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        select, input[type="number"] { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; background: white; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; }
+        button:hover { background: #1d4ed8; }
+        .info-regras { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin-top: 20px; border-radius: 4px; font-size: 13px; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/produtos">📦 Produtos</a>
+        <a href="/estoque">🔄 Movimentação de Estoque</a>
+    </div>
+
+    <h1>Módulo de Estoque</h1>
+
+    <div th:if="${mensagemSucesso}" class="alert-success" th:text="${mensagemSucesso}"></div>
+    <div th:if="${mensagemErro}" class="alert-danger" th:text="${mensagemErro}"></div>
+
+    <div class="container">
+        <div class="table-container">
+            <h2>Status Atual do Estoque</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Produto</th>
+                        <th>Estoque Atual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="produto : ${produtos}">
+                        <td th:text="${produto.id}"></td>
+                        <td th:text="${produto.nome}"></td>
+                        <td style="font-weight: bold;" th:text="${produto.quantidadeEstoque}"></td>
+                        <td>
+                            <span th:if="${produto.status.name() == 'DISPONIVEL'}" class="badge badge-disponivel">DISPONÍVEL</span>
+                            <span th:if="${produto.status.name() == 'INDISPONIVEL'}" class="badge badge-indisponivel">INDISPONÍVEL</span>
+                            <span th:if="${produto.status.name() == 'DESCONTINUADO'}" class="badge badge-descontinuado">DESCONTINUADO</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Lançar Movimentação</h2>
+            <form th:action="@{/estoque/movimentar}" method="post">
+                <div class="form-group">
+                    <label for="produtoId">Selecione o Produto:</label>
+                    <select id="produtoId" name="produtoId" required>
+                        <option value="">-- Escolha um produto --</option>
+                        <option th:each="p : ${produtos}" 
+                                th:value="${p.id}" 
+                                th:text="${p.nome + ' (Estoque: ' + p.quantidadeEstoque + ' - ' + p.status.descricao + ')'}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo">Tipo de Operação:</label>
+                    <select id="tipo" name="tipo" required>
+                        <option value="ENTRADA">📥 Entrada no Estoque</option>
+                        <option value="SAIDA">📤 Saída do Estoque</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantidade">Quantidade:</label>
+                    <input type="number" id="quantidade" name="quantidade" min="1" required placeholder="Ex.: 5" />
+                </div>
+
+                <button type="submit">Confirmar Movimentação</button>
+            </form>
+
+            <div class="info-regras">
+                <strong>Regras de Negócio:</strong>
+                <ul style="margin: 5px 0 0 0; padding-left: 18px;">
+                    <li>Entrada tira o produto de zero e torna <strong>DISPONÍVEL</strong>.</li>
+                    <li>Saída que zera o estoque torna o produto <strong>INDISPONÍVEL</strong>.</li>
+                    <li>Não é permitida saída sem saldo suficiente.</li>
+                    <li>Produto <strong>DESCONTINUADO</strong> não pode ser movimentado.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

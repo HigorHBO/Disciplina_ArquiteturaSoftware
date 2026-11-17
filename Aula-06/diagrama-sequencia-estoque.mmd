@@ -1,0 +1,43 @@
+sequenceDiagram
+    actor Usuário as Operador de Estoque
+    participant Controller as EstoqueController
+    participant Service as ProdutoService
+    participant Produto as Produto (Entidade)
+
+    %% Rotina de Entrada de Estoque
+    rect rgb(240, 248, 255)
+        Note over Usuário,Produto: 1. Rotina de Entrada de Estoque
+        Usuário->>Controller: POST /estoque/movimentar (produtoId, "ENTRADA", quantidade)
+        activate Controller
+        Controller->>Service: darEntrada(produtoId, quantidade)
+        activate Service
+        Service->>Service: buscarPorId(produtoId)
+        Service->>Produto: darEntrada(quantidade)
+        activate Produto
+        Note over Produto: Valida se NÃO é Descontinuado<br/>Soma quantidade<br/>Se estoque > 0 -> Status = DISPONÍVEL
+        Produto-->>Service: confirmação
+        deactivate Produto
+        Service-->>Controller: void
+        deactivate Service
+        Controller-->>Usuário: redirect /estoque (com mensagem de sucesso)
+        deactivate Controller
+    end
+
+    %% Rotina de Saída de Estoque
+    rect rgb(255, 245, 245)
+        Note over Usuário,Produto: 2. Rotina de Saída de Estoque
+        Usuário->>Controller: POST /estoque/movimentar (produtoId, "SAIDA", quantidade)
+        activate Controller
+        Controller->>Service: darSaida(produtoId, quantidade)
+        activate Service
+        Service->>Service: buscarPorId(produtoId)
+        Service->>Produto: darSaida(quantidade)
+        activate Produto
+        Note over Produto: Valida se NÃO é Descontinuado<br/>Valida se saldo >= quantidade<br/>Subtrai quantidade<br/>Se estoque == 0 -> Status = INDISPONÍVEL
+        Produto-->>Service: confirmação
+        deactivate Produto
+        Service-->>Controller: void
+        deactivate Service
+        Controller-->>Usuário: redirect /estoque (com mensagem de sucesso)
+        deactivate Controller
+    end
